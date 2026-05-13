@@ -281,37 +281,182 @@ npm run build
 
 ---
 
-## Deployment Recommendation
+## Free Deployment Guide
 
-Best practical deployment path:
-
-- **Frontend:** Vercel or Render Static Site
-- **Backend:** Render Web Service
-- **Storage:** Render persistent disk for uploaded CSVs, PDFs, and generated FAISS index
-
-Backend start command:
-
-```bash
-uvicorn main:app --host 0.0.0.0 --port $PORT
-```
-
-Frontend build settings:
+The recommended no-paid-instance setup is:
 
 ```text
-Build command: npm install && npm run build
-Publish directory: dist
+Vercel Free
+  React/Vite frontend
+
+Hugging Face Spaces Free CPU
+  FastAPI backend in Docker
+  ML models, RAG, FAISS, sample CSVs, sample PDFs
 ```
 
-Important production environment variables:
+Why this setup?
+
+- Vercel is very good for free static React/Vite deployments.
+- Hugging Face Spaces supports Docker apps and exposes port `7860` by default.
+- AlphaMind needs more memory than many tiny free API hosts because it uses `torch`, `xgboost`, `sentence-transformers`, and `faiss-cpu`.
+
+Free-tier limitation:
+
+- Files written at runtime on a free Hugging Face Space can disappear when the Space restarts.
+- The sample CSV/PDF files committed in this repository will work.
+- For permanent user uploads later, add Hugging Face persistent storage or external storage.
+
+### Deployment Files Included
+
+| File | Purpose |
+| --- | --- |
+| `Dockerfile` | Builds and runs the FastAPI backend on Hugging Face Spaces. |
+| `.dockerignore` | Keeps local envs, caches, Node modules, and build outputs out of the Docker image. |
+| `frontend/vercel.json` | Makes React Router routes like `/guide` work after Vercel deployment. |
+| `backend/.env.production.example` | Production backend environment template. |
+| `frontend/.env.example` | Local and Vercel frontend environment template. |
+
+### Step 1: Deploy Backend on Hugging Face Spaces
+
+1. Go to [Hugging Face Spaces](https://huggingface.co/spaces).
+2. Click **Create new Space**.
+3. Choose:
+   - **Space name:** `alphamind-api`
+   - **SDK:** Docker
+   - **Hardware:** Free CPU
+   - **Visibility:** Public or Private
+4. Connect this GitHub repository or manually push the repository files to the Space.
+5. Make sure the Space uses the root `Dockerfile`.
+
+The backend Dockerfile exposes:
+
+```text
+7860
+```
+
+The container starts with:
 
 ```bash
-GROQ_API_KEY=...
-GROQ_MODEL=llama-3.3-70b-versatile
-CORS_ORIGINS=https://your-frontend-domain.com
-VITE_API_URL=https://your-backend-domain.com
+uvicorn main:app --host 0.0.0.0 --port 7860
 ```
 
-For the backend, choose an instance with enough memory. `torch`, `xgboost`, `sentence-transformers`, and `faiss-cpu` are heavier than a basic CRUD API.
+### Step 2: Add Hugging Face Space Variables
+
+In the Space page:
+
+1. Open **Settings**.
+2. Add these environment variables:
+
+```bash
+APP_ENV=production
+APP_NAME=AlphaMind
+API_HOST=0.0.0.0
+API_PORT=7860
+GROQ_MODEL=llama-3.3-70b-versatile
+CORS_ORIGINS=https://your-vercel-app.vercel.app
+```
+
+3. Add this as a secret:
+
+```bash
+GROQ_API_KEY=your_groq_key_here
+```
+
+You can leave `GROQ_API_KEY` empty while testing. The app will use local fallback answers.
+
+### Step 3: Test Backend
+
+After the Space finishes building, open:
+
+```text
+https://your-space-name.hf.space/health
+```
+
+Expected response:
+
+```json
+{"status":"ok"}
+```
+
+Then test:
+
+```text
+https://your-space-name.hf.space/api/tickers
+```
+
+### Step 4: Deploy Frontend on Vercel
+
+1. Go to [Vercel](https://vercel.com).
+2. Click **Add New Project**.
+3. Import this GitHub repository.
+4. Configure:
+
+```text
+Framework Preset: Vite
+Root Directory: frontend
+Build Command: npm run build
+Output Directory: dist
+Install Command: npm install
+```
+
+5. Add this Vercel environment variable:
+
+```bash
+VITE_API_URL=https://your-space-name.hf.space
+```
+
+6. Deploy.
+
+### Step 5: Update Backend CORS
+
+After Vercel gives you a frontend URL, copy it.
+
+Example:
+
+```text
+https://alphamind-xgboost.vercel.app
+```
+
+Go back to Hugging Face Space settings and update:
+
+```bash
+CORS_ORIGINS=https://alphamind-xgboost.vercel.app
+```
+
+Restart the Space.
+
+### Step 6: Final Smoke Test
+
+Open the Vercel URL and test:
+
+1. Dashboard loads.
+2. `AAPL` pipeline runs.
+3. Candlestick chart renders.
+4. Explanation card appears.
+5. Chat answers a question.
+6. `/guide` route opens directly in the browser.
+
+### Useful Production URLs
+
+```text
+Frontend:
+https://your-vercel-app.vercel.app
+
+Backend:
+https://your-space-name.hf.space
+
+Health:
+https://your-space-name.hf.space/health
+
+Tickers:
+https://your-space-name.hf.space/api/tickers
+```
+
+### Official Docs
+
+- [Hugging Face Docker Spaces](https://huggingface.co/docs/hub/en/spaces-sdks-docker)
+- [Hugging Face Spaces configuration](https://huggingface.co/docs/hub/spaces-config-reference)
+- [Vercel Vite deployment](https://vercel.com/docs/frameworks/frontend/vite)
 
 ---
 
@@ -363,6 +508,32 @@ VITE_API_URL=http://127.0.0.1:8000
 ```
 
 Then restart the frontend dev server.
+
+### Vercel `/guide` route shows 404 on refresh
+
+Make sure `frontend/vercel.json` exists and the Vercel project root directory is set to `frontend`.
+
+### Hugging Face Space fails during Docker build
+
+Common causes:
+
+- Free CPU build is still installing large packages. Wait for the build logs.
+- `torch` and `sentence-transformers` can take time to install.
+- If the build runs out of resources, temporarily remove `torch` or reduce ML dependencies for demo-only deployment.
+
+### Hugging Face backend works but frontend cannot call it
+
+Check both sides:
+
+```bash
+# Vercel environment variable
+VITE_API_URL=https://your-space-name.hf.space
+
+# Hugging Face environment variable
+CORS_ORIGINS=https://your-vercel-app.vercel.app
+```
+
+Then redeploy Vercel and restart the Hugging Face Space.
 
 ---
 
