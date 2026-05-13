@@ -1,0 +1,6 @@
+{
+  "app_name": "AlphaMind",
+  "default_horizon": 7,
+  "supported_tickers": ["AAPL", "MSFT", "GOOGL", "TSLA"],
+  "knowledge_top_k": 3
+}
