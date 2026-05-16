@@ -408,6 +408,28 @@ VITE_API_URL=https://your-space-name.hf.space
 
 6. Deploy.
 
+If Vercel shows `vite: command not found`, the project is being built from the wrong directory or with the wrong command. Use either:
+
+Recommended:
+
+```text
+Root Directory: frontend
+Build Command: npm run build
+Output Directory: dist
+Install Command: npm install
+```
+
+Fallback if the Vercel project root is the repository root:
+
+```text
+Root Directory: .
+Build Command: npm run build
+Output Directory: dist
+Install Command: npm install
+```
+
+The repository includes root-level `package.json`, `vite.config.js`, and `vercel.json` so the fallback root build also works.
+
 ### Step 5: Update Backend CORS
 
 After Vercel gives you a frontend URL, copy it.

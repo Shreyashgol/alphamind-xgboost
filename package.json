@@ -1,0 +1,17 @@
+{
+  "name": "alphamind-xgboost",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "npm --workspace frontend run dev",
+    "frontend:build": "npm --workspace frontend run build"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "vite": "^7.1.0"
+  }
+}
