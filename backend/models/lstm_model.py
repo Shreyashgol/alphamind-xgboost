@@ -13,15 +13,18 @@ except ImportError as exc:
     _torch_import_error = exc
 
 
-class _LSTMForecaster(nn.Module):
-    def __init__(self, hidden_size: int) -> None:
-        super().__init__()
-        self.lstm = nn.LSTM(input_size=1, hidden_size=hidden_size, batch_first=True)
-        self.output = nn.Linear(hidden_size, 1)
+if nn is not None:
+    class _LSTMForecaster(nn.Module):
+        def __init__(self, hidden_size: int) -> None:
+            super().__init__()
+            self.lstm = nn.LSTM(input_size=1, hidden_size=hidden_size, batch_first=True)
+            self.output = nn.Linear(hidden_size, 1)
 
-    def forward(self, inputs):
-        outputs, _ = self.lstm(inputs)
-        return self.output(outputs[:, -1, :])
+        def forward(self, inputs):
+            outputs, _ = self.lstm(inputs)
+            return self.output(outputs[:, -1, :])
+else:
+    _LSTMForecaster = None
 
 
 class LSTMModel(BaseModel):
