@@ -1,5 +1,3 @@
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -8,29 +6,16 @@ from routes.forecast_routes import router as forecast_router
 from routes.query_routes import router as query_router
 from routes.ticker_routes import router as ticker_router
 from routes.train_routes import router as train_router
-from rag.rag_pipeline import ensure_knowledge_index
-from utils.logger import get_logger
 from utils.settings import get_settings
 
 
-logger = get_logger(__name__)
 settings = get_settings()
-
-
-@asynccontextmanager
-async def lifespan(_: FastAPI):
-    try:
-        ensure_knowledge_index(force_rebuild=False)
-    except Exception as exc:
-        logger.warning("Knowledge index bootstrap failed: %s", exc)
-    yield
 
 
 app = FastAPI(
     title=f"{settings.app_name} API",
     version="0.1.0",
     description="Forecasting, explanation, and retrieval APIs for stock analysis.",
-    lifespan=lifespan,
 )
 
 app.add_middleware(

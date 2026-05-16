@@ -1,0 +1,11 @@
+-r requirements.txt
+
+pytest==8.4.1
+httpx==0.28.1
+reportlab>=4.2.0
+
+# Optional local research dependencies. They are intentionally not installed
+# on Render free because they pull very large wheels and can delay startup.
+torch>=2.0.0
+shap>=0.46.0
+sentence-transformers>=3.0.0

@@ -186,6 +186,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 cp .env.example .env
 uvicorn main:app --reload
 ```
@@ -457,6 +458,81 @@ https://your-space-name.hf.space/api/tickers
 - [Hugging Face Docker Spaces](https://huggingface.co/docs/hub/en/spaces-sdks-docker)
 - [Hugging Face Spaces configuration](https://huggingface.co/docs/hub/spaces-config-reference)
 - [Vercel Vite deployment](https://vercel.com/docs/frameworks/frontend/vite)
+
+## Render Free Backend Deployment
+
+If you deploy the backend on Render free, use the native Python service configuration below. This repo includes a `render.yaml`, but the manual dashboard settings are listed here so you can fix an existing service.
+
+### Why the Original Render Build Failed
+
+Your log shows three issues:
+
+1. Render selected **Python 3.14.3** because no version was pinned.
+2. `torch>=2.0.0` on Python 3.14 pulled massive CUDA packages, making the build huge and slow.
+3. The start command used `--port 7860`, but Render web services should bind to Render's `$PORT`.
+4. The app built the FAISS/sentence-transformer index during FastAPI startup, so Render could not detect an open port quickly.
+
+This repo now fixes those by:
+
+- pinning Python with `backend/.python-version`
+- slimming production dependencies in `backend/requirements.txt`
+- moving optional heavy local dependencies to `backend/requirements-dev.txt`
+- removing blocking RAG indexing from app startup
+- adding `render.yaml`
+
+### Correct Render Settings
+
+Create or edit your Render Web Service:
+
+```text
+Runtime: Python 3
+Root Directory: backend
+Build Command: pip install -r requirements.txt
+Start Command: uvicorn main:app --host 0.0.0.0 --port $PORT
+```
+
+Environment variables:
+
+```bash
+PYTHON_VERSION=3.11.9
+APP_ENV=production
+API_HOST=0.0.0.0
+CORS_ORIGINS=https://your-vercel-app.vercel.app
+GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_API_KEY=your_groq_key_here
+```
+
+Do **not** set:
+
+```bash
+API_PORT=7860
+```
+
+For Render, always let the start command use `$PORT`.
+
+### After Redeploy
+
+Test:
+
+```text
+https://your-render-service.onrender.com/health
+```
+
+Expected:
+
+```json
+{"status":"ok"}
+```
+
+Then test:
+
+```text
+https://your-render-service.onrender.com/api/tickers
+```
+
+### Render Free Limitations
+
+Render free web services spin down after inactivity. First request after sleep can be slow. The filesystem is ephemeral, so uploaded/generated files should not be treated as permanent unless you move to a paid persistent disk or external storage.
 
 ---
 
