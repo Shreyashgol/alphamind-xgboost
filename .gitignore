@@ -10,3 +10,8 @@ backend/**/__pycache__/
 frontend/node_modules/
 frontend/dist/
 backend/data/faiss_index/
+
+# Root-level accidentals
+node_modules/
+package-lock.json
+test.py
