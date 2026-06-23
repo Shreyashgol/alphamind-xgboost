@@ -33,6 +33,6 @@ app.include_router(ticker_router, prefix="/api", tags=["tickers"])
 app.include_router(train_router, prefix="/api", tags=["train"])
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health_check() -> dict:
     return {"status": "ok"}
