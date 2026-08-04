@@ -6,11 +6,14 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.9
+        value: "3.11.9"
       - key: APP_ENV
         value: production
+      - key: APP_NAME
+        value: AlphaMind
       - key: API_HOST
         value: 0.0.0.0
       - key: CORS_ORIGINS
@@ -19,3 +22,13 @@ services:
         sync: false
       - key: GROQ_MODEL
         value: llama-3.3-70b-versatile
+      - key: DEFAULT_HORIZON
+        value: "7"
+      - key: SUPPORTED_TICKERS
+        value: AAPL,MSFT,GOOGL,TSLA
+      - key: KNOWLEDGE_TOP_K
+        value: "3"
+      - key: RAG_RECENCY_DAYS
+        value: "90"
+      - key: SENTENCE_TRANSFORMER_MODEL
+        value: all-MiniLM-L6-v2
